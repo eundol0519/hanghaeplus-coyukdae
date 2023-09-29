@@ -9,19 +9,15 @@ function App() {
     [1, 2, 3, "="],
     [0],
   ];
-  const types = {
-    'number': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    'operator': ["+", "-", "/", "*"],
-  };
 
   const [operator, setOperator] = useState("");
   const [number, setNumber] = useState("");
   const [result, setResult] = useState(0);
-  const [hasCalculatedResult, setHasCalculatedResult] = useState(false)
+  const [hasCalculatedResult, setHasCalculatedResult] = useState(false);
 
-  function formatWithCommas(x) {
+  const formatNumberWithCommas = (x) => {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
+  };
 
   const calculationHandler = (type, value) => {
     switch (type) {
@@ -49,21 +45,34 @@ function App() {
         setNumber("");
         setOperator(value);
         break;
-      case "AC":
+      case "Clear":
         let text = '';
 
         if (!operator) {
           text = String(result);
-
           setResult(Number(text.substring(0, text.length - 1)));
         } else {
           text = String(number);
-
           setNumber(Number(text.substring(0, text.length - 1)));
         }
         break;
       default:
         alert("calculationHandler error");
+    }
+  }
+
+  const calculateExpression = (expression) => {
+    try {
+      const result = new Function(`return ${expression}`)();
+
+      if (isNaN(result)) {
+        throw new Error("숫자 아님");
+      }
+
+      return result;
+    } catch (error) {
+      console.log("calculateExpression error", error);
+      return "숫자 아님";
     }
   }
 
@@ -73,54 +82,77 @@ function App() {
       return;
     }
 
-    const calculationResult = Math.ceil(eval(`${result}${operator}${number}`));
+    const calculationResult = calculateExpression(`${result}${operator}${number}`);
+    const roundedResult = Math.ceil(calculationResult);
 
-    setResult(String(calculationResult).length > 10 ? "infinity" : calculationResult)
+    if (String(roundedResult).length > 10) {
+      setResult("Infinity");
+    } else if (calculationResult === "숫자 아님") {
+      setResult("숫자 아님");
+    } else {
+      setResult(roundedResult);
+    }
+
     setNumber("");
     setOperator("");
-    setHasCalculatedResult(true)
+    setHasCalculatedResult(true);
   }
 
   const resetHandler = () => {
     setOperator("");
     setNumber("");
-    setResult(0)
+    setResult(0);
   }
 
   return (
     <div className="calculation">
-      <div className="resultInput">{formatWithCommas(result)}{operator}{formatWithCommas(number)}</div>
-      <div className="buttonWrap">
-        {buttons.map((arr) => {
-          return <div className="row">{arr.map((item) => {
-            return <div className="button" onClick={() => {
-              if (item === "C") {
-                return resetHandler()
-              } else if (item === "=") {
-                return calculateHandler()
-              }
-
-              let type = '';
-
-              if (types.number.includes(item) || item === ".") {
-                type = "number";
-              } else if (types.operator.includes(item)) {
-                type = "operator";
-              } else if (item === "←") {
-                type = "AC";
-              }
-
-              calculationHandler(type, item)
-            }} style={
-              item === "=" ? {
-                height: "143px",
-                lineHeight: "143px"
-              } : item === 0 ? { width: "260px", position: "absolute", bottom: "50px" }
-                : undefined}>{item}</div>
-          })}</div>
-        })}
+      <div className="resultInput">
+        {formatNumberWithCommas(result)}{operator}{formatNumberWithCommas(number)}
       </div>
-    </div >
+      <div className="buttonWrap">
+        {buttons.map((arr, rowIndex) => (
+          <div className="row" key={rowIndex}>
+            {arr.map((item, columnIndex) => (
+              <div
+                className="button"
+                key={columnIndex}
+                onClick={() => {
+                  if (item === "C") {
+                    return resetHandler();
+                  } else if (item === "=") {
+                    return calculateHandler();
+                  }
+
+                  let type = "";
+
+                  if (typeof item === "number" || item === ".") {
+                    type = "number";
+                  } else if (["+", "-", "/", "*"].includes(item)) {
+                    type = "operator";
+                  } else if (item === "←") {
+                    type = "Clear";
+                  }
+
+                  calculationHandler(type, item);
+                }}
+                style={
+                  item === "="
+                    ? {
+                      height: "143px",
+                      lineHeight: "143px",
+                    }
+                    : item === 0
+                      ? { width: "260px", position: "absolute", bottom: "50px" }
+                      : undefined
+                }
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

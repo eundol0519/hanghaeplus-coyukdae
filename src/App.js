@@ -7,54 +7,38 @@ function App() {
     [7, 8, 9, "←"],
     [4, 5, 6, "C"],
     [1, 2, 3, "="],
-    [0],
+    [0, "."],
   ];
 
-  const [operator, setOperator] = useState("");
-  const [number, setNumber] = useState("");
-  const [result, setResult] = useState(0);
-  const [hasCalculatedResult, setHasCalculatedResult] = useState(false);
+  const [extension, setExtension] = useState("");
 
   const formatNumberWithCommas = (x) => {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  };
+  }
 
   const calculationHandler = (type, value) => {
     switch (type) {
       case "number":
         const convertStringToNumber = (item) => {
-          return Number(`${item}${value}`);
+          return String(`${item}${value}`);
         };
 
-        if (hasCalculatedResult && !operator) {
-          setOperator("+");
-          setHasCalculatedResult(false);
-        }
-
-        if (!hasCalculatedResult && !operator) {
-          setResult((prev) => convertStringToNumber(prev));
-        } else {
-          setNumber((prev) => convertStringToNumber(prev));
-        }
+        setExtension((prev) => convertStringToNumber(prev));
+        break;
+      case "dot":
+        setExtension((prev) => prev + ".");
         break;
       case "operator":
-        if (result) {
-          calculateHandler();
-        }
+        const lastChar = extension.charAt(extension.length - 1);
 
-        setNumber("");
-        setOperator(value);
+        if (["+", "-", "/", "*"].includes(lastChar)) {
+          setExtension((prev) => prev.slice(0, prev.length - 1) + value);
+        } else {
+          setExtension((prev) => prev + value);
+        }
         break;
       case "Clear":
-        let text = '';
-
-        if (!operator) {
-          text = String(result);
-          setResult(Number(text.substring(0, text.length - 1)));
-        } else {
-          text = String(number);
-          setNumber(Number(text.substring(0, text.length - 1)));
-        }
+        setExtension((prev) => prev.slice(0, prev.length - 1));
         break;
       default:
         alert("calculationHandler error");
@@ -77,37 +61,33 @@ function App() {
   }
 
   const calculateHandler = () => {
-    if (result && operator && !number) {
+    const lastChar = extension.charAt(extension.length - 1);
+
+    if (["+", "-", "/", "*"].includes(lastChar)) {
       alert("연산자 뒤에 숫자가 없어 계산이 어렵습니다.");
       return;
     }
 
-    const calculationResult = calculateExpression(`${result}${operator}${number}`);
-    const roundedResult = Math.ceil(calculationResult);
+    const calculationResult = calculateExpression(extension);
+    const roundedResult = String(Math.ceil(calculationResult));
 
     if (String(roundedResult).length > 10) {
-      setResult("Infinity");
+      setExtension("Infinity");
     } else if (calculationResult === "숫자 아님") {
-      setResult("숫자 아님");
+      setExtension("숫자 아님");
     } else {
-      setResult(roundedResult);
+      setExtension(roundedResult);
     }
-
-    setNumber("");
-    setOperator("");
-    setHasCalculatedResult(true);
   }
 
   const resetHandler = () => {
-    setOperator("");
-    setNumber("");
-    setResult(0);
+    setExtension("");
   }
 
   return (
     <div className="calculation">
       <div className="resultInput">
-        {formatNumberWithCommas(result)}{operator}{formatNumberWithCommas(number)}
+        {formatNumberWithCommas(extension) || 0}
       </div>
       <div className="buttonWrap">
         {buttons.map((arr, rowIndex) => (
@@ -117,6 +97,10 @@ function App() {
                 className="button"
                 key={columnIndex}
                 onClick={() => {
+                  if (extension === "Infinity" || extension === "숫자 아님") {
+                    setExtension('');
+                  };
+
                   if (item === "C") {
                     return resetHandler();
                   } else if (item === "=") {
@@ -125,8 +109,10 @@ function App() {
 
                   let type = "";
 
-                  if (typeof item === "number" || item === ".") {
+                  if (typeof item === "number") {
                     type = "number";
+                  } else if (item === ".") {
+                    type = 'dot'
                   } else if (["+", "-", "/", "*"].includes(item)) {
                     type = "operator";
                   } else if (item === "←") {
@@ -142,8 +128,10 @@ function App() {
                       lineHeight: "143px",
                     }
                     : item === 0
-                      ? { width: "260px", position: "absolute", bottom: "50px" }
-                      : undefined
+                      ? { width: "170px", position: "absolute", bottom: "50px" }
+                      : item === "."
+                        ? { width: "80px", position: "absolute", bottom: "50px", left: "210px" }
+                        : undefined
                 }
               >
                 {item}

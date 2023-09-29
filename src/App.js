@@ -14,24 +14,53 @@ function App() {
     'operator': ["+", "-", "/", "*"],
   };
 
-  const [formula, setFormula] = useState("") // 계산식
-  const [result, setResult] = useState(0) // 계산 결과
-  const [resultClickYN, setResultClickYN] = useState(0) // 계산 결과 유무
+  const [operator, setOperator] = useState("");
+  const [number, setNumber] = useState("");
+  const [result, setResult] = useState(0);
+  const [hasCalculatedResult, setHasCalculatedResult] = useState(false)
+
+  function formatWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
 
   const calculationHandler = (type, value) => {
     switch (type) {
       case "number":
-        setFormula((prev) => prev + value);
-        break;
-      case "operator":
-        if (types.operator.includes(formula[formula.length - 1])) {
-          setFormula((prev) => prev.slice(0, formula.length - 1) + value);
+        const convertStringToNumber = (item) => {
+          return Number(`${item}${value}`);
+        };
+
+        if (hasCalculatedResult && !operator) {
+          setOperator("+");
+          setHasCalculatedResult(false);
+        }
+
+        if (!hasCalculatedResult && !operator) {
+          setResult((prev) => convertStringToNumber(prev));
         } else {
-          setFormula((prev) => prev + value);
+          setNumber((prev) => convertStringToNumber(prev));
         }
         break;
+      case "operator":
+        if (result) {
+          calculateHandler();
+        }
+
+        setNumber("");
+        setOperator(value);
+        break;
       case "AC":
-        setFormula((prev) => prev.substring(0, prev.length - 1));
+        let text = '';
+
+        if (!operator) {
+          text = String(result);
+
+          setResult(Number(text.substring(0, text.length - 1)));
+        } else {
+          text = String(number);
+
+          setNumber(Number(text.substring(0, text.length - 1)));
+        }
         break;
       default:
         alert("calculationHandler error");
@@ -39,23 +68,28 @@ function App() {
   }
 
   const calculateHandler = () => {
-    // 계산식이 0 / 0인 경우 숫자 아님 출력
-    // 연산자 다음에 숫자를 입력하지 않고 =을 입력하는 경우 alert 출력
-    // 10자리를 넘어가는 결과값은 infinity로 표시
-    // 연산 결과는 소수점 이하를 버림하여 정수로 표현
+    if (result && operator && !number) {
+      alert("연산자 뒤에 숫자가 없어 계산이 어렵습니다.");
+      return;
+    }
 
-    console.log(result)
+    const calculationResult = Math.ceil(eval(`${result}${operator}${number}`));
+
+    setResult(String(calculationResult).length > 10 ? "infinity" : calculationResult)
+    setNumber("");
+    setOperator("");
+    setHasCalculatedResult(true)
   }
 
   const resetHandler = () => {
-    setFormula("")
+    setOperator("");
+    setNumber("");
     setResult(0)
-    setResultClickYN(false)
   }
 
   return (
     <div className="calculation">
-      <div className="resultInput">{resultClickYN ? result : formula}</div>
+      <div className="resultInput">{formatWithCommas(result)}{operator}{formatWithCommas(number)}</div>
       <div className="buttonWrap">
         {buttons.map((arr) => {
           return <div className="row">{arr.map((item) => {
@@ -68,7 +102,7 @@ function App() {
 
               let type = '';
 
-              if (types.number.includes(item)) {
+              if (types.number.includes(item) || item === ".") {
                 type = "number";
               } else if (types.operator.includes(item)) {
                 type = "operator";
@@ -77,10 +111,12 @@ function App() {
               }
 
               calculationHandler(type, item)
-            }} style={item === "=" ? {
-              height: "143px",
-              lineHeight: "143px"
-            } : item === 0 ? { width: "260px", position: "absolute", bottom: "50px" } : undefined}>{item}</div>
+            }} style={
+              item === "=" ? {
+                height: "143px",
+                lineHeight: "143px"
+              } : item === 0 ? { width: "260px", position: "absolute", bottom: "50px" }
+                : undefined}>{item}</div>
           })}</div>
         })}
       </div>

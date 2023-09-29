@@ -8,27 +8,30 @@ function App() {
     [4, 5, 6, "C"],
     [1, 2, 3, "="],
     [0],
-  ]
+  ];
+  const types = {
+    'number': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    'operator': ["+", "-", "/", "*"],
+  };
 
-  const [formula, setFormula] = useState(0) // 계산식
+  const [formula, setFormula] = useState("") // 계산식
   const [result, setResult] = useState(0) // 계산 결과
   const [resultClickYN, setResultClickYN] = useState(0) // 계산 결과 유무
 
-  const calculationHandler = (e, type) => {
-    const name = e.target.name;
-    const value = e.target.value;
-
+  const calculationHandler = (type, value) => {
     switch (type) {
       case "number":
-        console.log(name, value);
+        setFormula((prev) => prev + value);
         break;
       case "operator":
-        // 끝 자리가 연산자면 연산자 교체
-        // 끝 자리가 숫자라면 연산자 붙이기
-        console.log(name, value);
+        if (types.operator.includes(formula[formula.length - 1])) {
+          setFormula((prev) => prev.slice(0, formula.length - 1) + value);
+        } else {
+          setFormula((prev) => prev + value);
+        }
         break;
       case "AC":
-        console.log("AC");
+        setFormula((prev) => prev.substring(0, prev.length - 1));
         break;
       default:
         alert("calculationHandler error");
@@ -45,7 +48,7 @@ function App() {
   }
 
   const resetHandler = () => {
-    setFormula(0)
+    setFormula("")
     setResult(0)
     setResultClickYN(false)
   }
@@ -56,16 +59,11 @@ function App() {
       <div className="buttonWrap">
         {buttons.map((arr) => {
           return <div className="row">{arr.map((item) => {
-            return <div className="button" onClick={(e) => {
+            return <div className="button" onClick={() => {
               if (item === "C") {
                 return resetHandler()
               } else if (item === "=") {
                 return calculateHandler()
-              }
-
-              const types = {
-                'number': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-                'operator': ["+", "-", "/", "*"],
               }
 
               let type = '';
@@ -78,7 +76,7 @@ function App() {
                 type = "AC";
               }
 
-              calculationHandler(e, type)
+              calculationHandler(type, item)
             }} style={item === "=" ? {
               height: "143px",
               lineHeight: "143px"
